@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mini Contact Manager</title>
+    <style>
+        /* General Setup */
+        :root {
+            --primary: #007bff;
+            --success: #28a745;
+            --danger: #dc3545;
+            --warning: #ffc107;
+            --background: #f8f9fa;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            background-color: var(--background);
+            padding: 20px;
+        }
+        .container { max-width: 1200px; margin: 0 auto; }
+        h1 { color: #343a40; margin-bottom: 20px; border-bottom: 2px solid #e9ecef; padding-bottom: 10px; }
+        
+        /* Layout */
+        .grid-layout { display: grid; gap: 30px; }
+        @media (min-width: 992px) {
+            .grid-layout { grid-template-columns: 1fr 2fr; }
+        }
+        
+        /* Card Styling */
+        .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        h2 { margin-top: 0; font-size: 1.5rem; color: #495057; }
+        
+        /* Form Styling */
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; font-size: 0.9rem; }
+        input[type="text"], input[type="email"], input[type="tel"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ced4da;
+            border-radius: 5px;
+            box-sizing: border-box;
+        }
+        
+        /* Button Styling */
+        .btn {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background-color 0.2s;
+        }
+        .btn-primary { background-color: var(--primary); color: white; width: 100%; }
+        .btn-primary:hover { background-color: #0056b3; }
+        .btn-sm { padding: 5px 10px; font-size: 0.8rem; margin-left: 5px; }
+        .btn-success { background-color: var(--success); color: white; }
+        .btn-danger { background-color: var(--danger); color: white; }
+        .btn-success:hover { background-color: #1e7e34; }
+        .btn-danger:hover { background-color: #bd2130; }
+
+        /* Table Styling */
+        .table-container { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { text-align: left; padding: 12px; border-bottom: 1px solid #dee2e6; }
+        th { background-color: #e9ecef; color: #495057; font-size: 0.85rem; text-transform: uppercase; }
+        tr:hover { background-color: #f1f1f1; }
+        .actions-cell { text-align: right; white-space: nowrap; }
+
+        /* Flash Messages */
+        .flash-message { padding: 10px; margin-bottom: 15px; border-radius: 5px; font-weight: bold; }
+        .flash-message.success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .flash-message.error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Mini Contact Manager</h1>
+
+        <!-- Flash Messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="flash-message {{ category }}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div class="grid-layout">
+            
+            <!-- Add Contact Form -->
+            <div class="card add-form">
+                <h2>Add New Contact</h2>
+
+                <form method="POST">
+                    
+                    <!-- Name -->
+                    <div class="form-group">
+                        <label for="name">Name</label>
+                        <!-- Use form_data for sticky fields after validation error -->
+                        <input type="text" id="name" name="name" required 
+                            value="{{ form_data.name if form_data else '' }}">
+                    </div>
+
+                    <!-- Email -->
+                    <div class="form-group">
+                        <label for="email">Email</label>
+                        <input type="email" id="email" name="email" required 
+                            value="{{ form_data.email if form_data else '' }}">
+                    </div>
+
+                    <!-- Phone -->
+                    <div class="form-group">
+                        <label for="phone">Phone (Optional)</label>
+                        <input type="tel" id="phone" name="phone" 
+                            value="{{ form_data.phone if form_data else '' }}">
+                    </div>
+
+                    <!-- Submit Button -->
+                    <button type="submit" class="btn btn-primary">Save Contact</button>
+                </form>
+            </div>
+
+            <!-- Contact List -->
+            <div class="card contact-list">
+                <h2>Contact List ({{ contacts|length }} Total)</h2>
+                
+                {% if contacts %}
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Phone</th>
+                                <th class="actions-cell">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for contact in contacts %}
+                            <tr>
+                                <td>{{ contact.name }}</td>
+                                <td>{{ contact.email }}</td>
+                                <td>{{ contact.phone or '-' }}</td>
+                                <td class="actions-cell">
+                                    <!-- Edit Link -->
+                                    <a href="{{ url_for('edit', id=contact.id) }}" 
+                                       class="btn btn-sm btn-success">
+                                        Edit
+                                    </a>
+                                    <!-- Delete Form (using POST method is proper for deletion) -->
+                                    <form method="POST" action="{{ url_for('delete', id=contact.id) }}" 
+                                          style="display: inline;">
+                                        <button type="submit" 
+                                                onclick="return confirm('Are you sure you want to delete {{ contact.name }}?')"
+                                                class="btn btn-sm btn-danger">
+                                            Delete
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p style="text-align: center; color: #6c757d; padding: 20px;">No contacts found. Add one using the form on the left!</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>
